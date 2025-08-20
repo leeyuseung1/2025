@@ -10,41 +10,41 @@ from sklearn.ensemble import RandomForestClassifier
 # 1. 가상 데이터셋 생성
 # -----------------------------
 np.random.seed(42)
-drugs = ["Tylenol", "Aspirin", "Ibuprofen", "Metformin", "Rosuvastatin"]
+drugs = ["타이레놀", "아스피린", "이부프로펜", "메트포르민", "로수바스타틴"]
 n = 500
 
 data = {
-    "Drug": np.random.choice(drugs, n),
-    "Age": np.random.randint(10, 90, n),
-    "Gender": np.random.choice(["Male", "Female"], n),
-    "Weight": np.random.randint(40, 100, n),
-    "Dosage": np.random.randint(10, 500, n),
+    "약이름": np.random.choice(drugs, n),
+    "나이": np.random.randint(10, 90, n),
+    "성별": np.random.choice(["남성", "여성"], n),
+    "체중": np.random.randint(40, 100, n),
+    "복용량": np.random.randint(10, 500, n),
 }
 
 # 부작용 발생 확률 가상 규칙
 side_effect_prob = (
-    (data["Age"] - 40) * 0.01
-    + (data["Dosage"] / 500) * 0.3
-    + np.where(pd.Series(data["Drug"]).isin(["Metformin", "Rosuvastatin"]), 0.2, 0)
+    (data["나이"] - 40) * 0.01
+    + (data["복용량"] / 500) * 0.3
+    + np.where(pd.Series(data["약이름"]).isin(["메트포르민", "로수바스타틴"]), 0.2, 0)
     + np.random.normal(0, 0.1, n)
 )
 side_effect_prob = 1 / (1 + np.exp(-side_effect_prob))
 side_effect = np.random.binomial(1, side_effect_prob)
 
 df = pd.DataFrame(data)
-df["SideEffect"] = side_effect
+df["부작용"] = side_effect
 
 # -----------------------------
 # 2. 데이터 전처리 & 모델 학습
 # -----------------------------
-X = df.drop("SideEffect", axis=1)
-y = df["SideEffect"]
+X = df.drop("부작용", axis=1)
+y = df["부작용"]
 
 # 범주형 인코딩
 le_drug = LabelEncoder()
 le_gender = LabelEncoder()
-X["Drug"] = le_drug.fit_transform(X["Drug"])
-X["Gender"] = le_gender.fit_transform(X["Gender"])
+X["약이름"] = le_drug.fit_transform(X["약이름"])
+X["성별"] = le_gender.fit_transform(X["성별"])
 
 # 학습/테스트 분리
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -56,103 +56,103 @@ model.fit(X_train, y_train)
 # -----------------------------
 # 3. 스트림릿 UI
 # -----------------------------
-st.title("💊 Drug Side Effect Prediction App")
-st.write("Input patient characteristics to predict the probability of side effects.")
+st.title("💊 약물 부작용 예측 앱")
+st.write("환자의 특성을 입력하면 부작용 발생 확률을 예측합니다.")
 
 # 사용자 입력
-drug_input = st.selectbox("Drug", drugs)
-age_input = st.slider("Age", 10, 90, 30)
-gender_input = st.radio("Gender", ["Male", "Female"])
-weight_input = st.slider("Weight (kg)", 40, 100, 60)
-dosage_input = st.slider("Dosage (mg)", 10, 500, 100)
+drug_input = st.selectbox("약 이름", drugs)
+age_input = st.slider("나이", 10, 90, 30)
+gender_input = st.radio("성별", ["남성", "여성"])
+weight_input = st.slider("체중(kg)", 40, 100, 60)
+dosage_input = st.slider("복용량(mg)", 10, 500, 100)
 
 # 입력 데이터 변환
 input_data = pd.DataFrame({
-    "Drug": [le_drug.transform([drug_input])[0]],
-    "Age": [age_input],
-    "Gender": [le_gender.transform([gender_input])[0]],
-    "Weight": [weight_input],
-    "Dosage": [dosage_input]
+    "약이름": [le_drug.transform([drug_input])[0]],
+    "나이": [age_input],
+    "성별": [le_gender.transform([gender_input])[0]],
+    "체중": [weight_input],
+    "복용량": [dosage_input]
 })
 
 # -----------------------------
 # 4. 예측
 # -----------------------------
-if st.button("Predict"):
+if st.button("예측하기"):
     prob = model.predict_proba(input_data)[0][1]
     pred = model.predict(input_data)[0]
 
-    st.subheader("📌 Prediction Result")
-    st.write(f"Probability of side effect: **{prob*100:.2f}%**")
+    st.subheader("📌 예측 결과")
+    st.write(f"부작용 발생 확률: **{prob*100:.2f}%**")
     if pred == 1:
-        st.error("⚠️ There is a risk of side effect.")
+        st.error("⚠️ 부작용이 발생할 가능성이 있습니다.")
     else:
-        st.success("✅ Low risk of side effect.")
+        st.success("✅ 부작용 발생 가능성이 낮습니다.")
 
     # -----------------------------
     # 5. Feature Importance 그래프
     # -----------------------------
-    st.subheader("📊 Feature Importance")
+    st.subheader("📊 특성 중요도")
     importances = model.feature_importances_
     features = X.columns
     fig, ax = plt.subplots()
     ax.barh(features, importances)
-    ax.set_xlabel("Importance")
-    ax.set_ylabel("Features")
-    ax.set_title("Feature Importance in Prediction")
+    ax.set_xlabel("중요도")
+    ax.set_ylabel("특성")
+    ax.set_title("예측에 기여한 특성 중요도")
     st.pyplot(fig)
 
     # -----------------------------
     # 6. 입력값 분포 시각화
     # -----------------------------
-    st.subheader("📈 Input Value vs Dataset Distribution")
-    for col in ["Age", "Weight", "Dosage"]:
+    st.subheader("📈 입력값과 전체 데이터 분포 비교")
+    for col in ["나이", "체중", "복용량"]:
         fig, ax = plt.subplots()
-        ax.hist(df[col], bins=20, alpha=0.7, label="Dataset")
-        ax.axvline(input_data[col][0], color='r', linestyle='dashed', linewidth=2, label="Input")
-        ax.set_title(f"{col} Distribution")
+        ax.hist(df[col], bins=20, alpha=0.7, label="전체 데이터")
+        ax.axvline(input_data[col][0], color='r', linestyle='dashed', linewidth=2, label="입력값")
+        ax.set_title(f"{col} 분포")
         ax.set_xlabel(col)
-        ax.set_ylabel("Count")
+        ax.set_ylabel("빈도")
         ax.legend()
         st.pyplot(fig)
 
     # -----------------------------
     # 7. 상호작용 효과 기반 자동 해석
     # -----------------------------
-    st.subheader("📖 Risk Factor Interpretation")
+    st.subheader("📖 위험 요인 해석")
     interpretations = []
 
     # 나이, 복용량, 약 이름 상호작용
-    if drug_input in ["Metformin", "Rosuvastatin"] and age_input > 60 and dosage_input > 300:
-        interpretations.append("High age + high dosage + this drug → significantly higher risk.")
+    if drug_input in ["메트포르민", "로수바스타틴"] and age_input > 60 and dosage_input > 300:
+        interpretations.append("고연령 + 고용량 + 해당 약물 → 부작용 위험이 크게 증가합니다.")
     else:
         if age_input > 60:
-            interpretations.append("Age is high → increases risk.")
+            interpretations.append("나이가 많음 → 부작용 위험 증가")
         elif age_input < 20:
-            interpretations.append("Age is low → lower risk.")
+            interpretations.append("나이가 적음 → 부작용 위험 낮음")
         else:
-            interpretations.append("Age is moderate → moderate risk.")
+            interpretations.append("나이가 보통 → 부작용 위험 보통")
 
         if dosage_input > 300:
-            interpretations.append("High dosage → increases risk.")
+            interpretations.append("복용량이 많음 → 부작용 위험 증가")
         else:
-            interpretations.append("Dosage is moderate/low → lower risk.")
+            interpretations.append("복용량 보통/적음 → 부작용 위험 낮음")
 
-        if drug_input in ["Metformin", "Rosuvastatin"]:
-            interpretations.append(f"{drug_input} → slightly higher risk than other drugs.")
+        if drug_input in ["메트포르민", "로수바스타틴"]:
+            interpretations.append(f"{drug_input} → 다른 약물보다 위험이 조금 높음")
         else:
-            interpretations.append(f"{drug_input} → normal risk level.")
+            interpretations.append(f"{drug_input} → 일반적인 위험 수준")
 
     # 성별, 체중
-    if gender_input == "Female":
-        interpretations.append("Female → minor increase in risk.")
+    if gender_input == "여성":
+        interpretations.append("여성 → 부작용 위험 약간 증가")
     else:
-        interpretations.append("Male → normal risk.")
+        interpretations.append("남성 → 일반적인 위험 수준")
 
     if weight_input > 80:
-        interpretations.append("High weight → minor impact on risk.")
+        interpretations.append("체중이 높음 → 부작용 위험에 약간 영향")
     else:
-        interpretations.append("Weight is normal → minor impact.")
+        interpretations.append("체중 보통 → 위험에 약간 영향")
 
     for line in interpretations:
         st.write(f"- {line}")
