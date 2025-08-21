@@ -1,3 +1,13 @@
+import matplotlib.pyplot as plt
+import matplotlib.font_manager as fm
+
+# 한글 폰트 설정 (Windows: 맑은 고딕, Mac: AppleGothic, Linux: 나눔고딕)
+plt.rcParams['font.family'] = 'Malgun Gothic'   # 윈도우
+# plt.rcParams['font.family'] = 'AppleGothic'   # 맥
+# plt.rcParams['font.family'] = 'NanumGothic'   # 리눅스
+
+# 음수 기호 깨짐 방지
+plt.rcParams['axes.unicode_minus'] = False
 import streamlit as st
 import pandas as pd
 import numpy as np
